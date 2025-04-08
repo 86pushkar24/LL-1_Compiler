@@ -1,43 +1,139 @@
-This project was made for GCC version 11.4.0 and Ubuntu 22.04 (through WSL)
+# Compiler Project – Stage 1  
+**Lexical and Syntax Analysis for a Toy Programming Language**
 
-File and Function descriptions:
+---
 
-1. File lexer.c : This file contains following functions
+## Overview
 
-FILE *getStream(FILE *fp): This function takes the input from the file pointed to by 'fp'. This file is the source code written in the given language. The function uses an efficient technique to populate twin buffer by bringing the fixed sized piece of source code into the memory for processing so as to avoid intensive I/O operations mixed with CPU-intensive tasks. The function also maintains the file pointer after every access so that it can get more data into the memory on demand. The implementation can also be combined with getNextToken() implementation as per the convenience of the team. 
+This project implements the first stage of a compiler front-end using **GCC version 11.4.0** on **Ubuntu 22.04 (via WSL)**. It includes the design and implementation of:
 
-tokenInfo getNextToken(twinBuffer B): This function reads the input character stream and uses efficient mechanism to recognize lexemes. The function tokenizes the lexeme appropriately and returns all relevant information it collects in this phase (lexical analysis phase) encapsulated as tokenInfo. The function also displays lexical errors appropriately. 
+- A **lexical analyzer** to tokenize source code efficiently
+- A **syntax analyzer** (predictive parser) that verifies the syntactic structure of input programs using a parse table
+- A basic **comment remover** for pre-processing
+- Support utilities including automated computation of **FIRST and FOLLOW** sets and **parse tree generation**
 
-removeComments(char *testcaseFile, char *cleanFile): This function is an additional plug-in to clean the source code by removal of comments. The function takes as input the source code and writes the clean code in the file appropriately. [Note: This function is invoked only once through your driver file to showcase the comment removal for evaluation purpose. However, your lexer does not really pick inputs from the comment removed file. Rather, it keeps ignoring the comments and keep collecting token Info to pass to the parser. For showcasing your lexers ability, directly take input from user source code]
+---
 
-2. File parser.c : This file contains following functions
+## Project Structure
 
-FirstAndFollow    ComputeFirstAndFollowSets (grammar G): This function takes as input the grammar G, computes FIRST and FOLLOW information and populates appropriate data structure FirstAndFollow. First and Follow set automation must be attempted, keeping in view the programming confidence of the team members and the available time with the teams.  If teams opt not to develop the module for computation of First and follow sets, the same can be computed manually and information be populated in the data structure appropriately. However, all members of the team must understand that any new grammar rule for any new construct will then require their expertise in computing FIRST and FOLLOW sets manually. 
+### 📁 Files and Function Descriptions
 
-createParseTable(FirstAndFollow F, table T): This function takes as input the FIRST and FOLLOW  information in F to populate the table T appropriately. 
+---
 
-parseInputSourceCode(char *testcaseFile, table T): This function takes as input the source code file and parses using the rules as per the predictive parse table T and returns a parse tree. The function gets the tokens using lexical analysis interface and establishes the syntactic structure of the input source code using rules in T. The function must report all errors appropriately (with line numbers) if the source code is syntactically incorrect. If the source code is correct then the token and all its relevant information is added to the parse tree. The start symbol of the grammar is the root of the parse tree and the tree grows as the syntax analysis moves in top down way. The function must display a message "Input source code is syntactically correct..........." for successful parsing.
+### `lexer.c`
 
-printParseTree(parseTree PT, char *outfile): This function provides an interface for observing the correctness of the creation of parse tree. The function prints the parse tree in inorder in the file outfile. The output is such that each line of the file outfile must contain the information corresponding to the currently visited node of the parse tree in the following format
+#### `FILE* getStream(FILE* fp)`
+- Efficiently loads source code from the file `fp` using a **twin buffer** mechanism.
+- Reduces I/O overhead by buffering a fixed-size block of code into memory.
+- Maintains the file pointer for sequential access and future reads.
 
-lexeme CurrentNode lineno tokenName valueIfNumber parentNodeSymbol isLeafNode(yes/no) NodeSymbol
+#### `tokenInfo getNextToken(twinBuffer B)`
+- Reads the buffered character stream to **recognize and tokenize lexemes**.
+- Returns relevant token information encapsulated in a `tokenInfo` struct.
+- Detects and reports lexical errors with line numbers.
 
-The lexeme of the current node is printed when it is the leaf node else a dummy string of characters "‐‐‐‐" is printed. The line number is one of the information collected by the lexical analyzer during single pass of the source code. The token name corresponding to the current node is printed third. If the lexeme is an integer or real number, then its value computed by the lexical analyzer should be printed at the fourth place. Print the grammar symbol (non-terminal symbol) of the parent node of the currently visited node appropriately at fifth place (for the root node print ROOT for parent symbol) . The sixth column is for printing yes or no appropriately. Print the non-terminal symbol of the node being currently visited at the 7th place, if the node is not the leaf node [Print the actual non-terminal symbol and not the enumerated values for the non-terminal]. Ensure appropriate justification so that the columns appear neat and straight.
+#### `void removeComments(char* testcaseFile, char* cleanFile)`
+- Removes comments from the source file and writes the cleaned output to `cleanFile`.
+- Used **once** via the driver to showcase functionality.
+- Lexer **does not** rely on the cleaned file—comments are ignored during tokenization.
 
-Header and Other file descriptions:
+---
 
-lexerDef.h : Contains all data definitions used in lexer.c 
+### `parser.c`
 
-lexer.h : Contains function prototype declarations of functions in lexer.c
+#### `FirstAndFollow ComputeFirstAndFollowSets(grammar G)`
+- Computes the **FIRST and FOLLOW sets** for the provided grammar.
+- Automates the process when possible. Manual entry is supported if required.
 
-parserDef.h : Contains all definitions for data types such as grammar, table, parseTree etc. used in parser.c
+#### `void createParseTable(FirstAndFollow F, table T)`
+- Builds a **predictive parse table** using computed FIRST and FOLLOW sets.
 
-parser.h : Contains function prototype declarations of functions in parser.c
+#### `parseTree parseInputSourceCode(char* testcaseFile, table T)`
+- Parses the input file using top-down predictive parsing.
+- Constructs and returns a **parse tree**.
+- Displays:
+  - Detailed **syntax errors** with line numbers.
+  - Confirmation message:  
+    `"Input source code is syntactically correct..........."` if no syntax errors are found.
 
-driver.c : As usual, drives the flow of execution to solve the given problem. (more details, if needed, will be uploaded soon)
+#### `void printParseTree(parseTree PT, char* outfile)`
+- Prints the parse tree **inorder** to `outfile` in the following format:
 
-makefile : This file uses GNU make utility, which determines automatically which pieces of a large program need to be recompiled, and issues the commands to recompile them. The correctness of your make file depends on file dependencies used correctly.
+```
+lexeme          CurrentNode lineno   tokenName     valueIfNumber  parentNodeSymbol  isLeafNode  NodeSymbol
+--------        ------------ ------  ------------  -------------  ----------------  ----------  -----------
+id              ---          2       ID            ---            <var>             yes         ID
+----            ---          ---     ---           ---            ROOT              no          <program>
+```
 
-Run the following commands to run the program (gcc 11.4, WSL) 
-make 
-./stage1exe [testfile.txt] output.txt
+---
+
+### Header and Support Files
+
+- `lexerDef.h`: Data structures for `lexer.c`
+- `lexer.h`: Function declarations for `lexer.c`
+- `parserDef.h`: Data structures for grammar, parse tree, etc.
+- `parser.h`: Function declarations for `parser.c`
+- `driver.c`: Drives the flow of the compiler front-end
+
+---
+
+## 🔧 Compilation & Execution
+
+Ensure you're using **GCC 11.4.0** under **Ubuntu 22.04 (WSL)**.
+
+### Build the Project
+
+```bash
+make
+```
+
+### Run the Executable
+
+```bash
+./stage1exe testfile.txt output.txt
+```
+
+- `testfile.txt`: Input source code file
+- `output.txt`: File where parse tree is printed
+
+---
+
+## ⚙️ Tools & Techniques Used
+
+- Twin buffer for optimized lexical analysis
+- Token data structure with detailed metadata
+- FIRST and FOLLOW computation (auto/manual)
+- Predictive parsing using a parsing table
+- Inorder parse tree generation
+- Modular code design following clean compiler architecture
+
+---
+
+## ✍️ Notes
+
+- The `removeComments()` function is a utility only for demonstration; the lexer processes the original source file.
+- This is **Stage 1** of a multi-stage compiler pipeline. Future enhancements may include semantic analysis, intermediate code generation, and optimization.
+
+---
+
+## 📁 Example Output
+
+> After a successful syntax check:
+
+```
+Input source code is syntactically correct...........
+```
+
+> Output parse tree (partial):
+
+```
+read            ---          1       READ          ---            <ioStmt>          yes         READ
+----            ---          ---     ---           ---            <stmt>            no          <ioStmt>
+```
+
+---
+
+## 📌 Author & Credits
+
+Developed as part of the Curiosity inside me.
